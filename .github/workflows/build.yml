@@ -5,7 +5,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-1-21:
+  build-1-21-11:
+    name: "Build 1.21.11 Mods"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,19 +15,42 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v3
-      - name: Build 1.21.x Mods
-        run: |
-          cd auto-sprint-1.21 && gradle build && cd ..
-          cd custom-crosshair-1.21 && gradle build && cd ..
-          cd quick-offhand-1.21 && gradle build && cd ..
+
+      - name: Build auto-sprint (1.21.11)
+        working-directory: auto-sprint/1.21.11
+        run: gradle build
+
+      - name: Build custom-crosshair (1.21.11)
+        working-directory: custom-crosshair/1.21.11
+        run: gradle build
+
+      - name: Build quick-offhand (1.21.11)
+        working-directory: quick-offhand/1.21.11
+        run: gradle build
+
       - uses: actions/upload-artifact@v4
         with:
-          name: mods-1.21.11
+          name: auto-sprint-1.21.11
           path: |
-            *-1.21/build/libs/*.jar
-            !*-1.21/build/libs/*-sources.jar
+            auto-sprint/1.21.11/build/libs/auto-sprint-*.jar
+            !auto-sprint/1.21.11/build/libs/*-sources.jar
 
-  build-26:
+      - uses: actions/upload-artifact@v4
+        with:
+          name: custom-crosshair-1.21.11
+          path: |
+            custom-crosshair/1.21.11/build/libs/custom-crosshair-*.jar
+            !custom-crosshair/1.21.11/build/libs/*-sources.jar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quick-offhand-1.21.11
+          path: |
+            quick-offhand/1.21.11/build/libs/quick-offhand-*.jar
+            !quick-offhand/1.21.11/build/libs/*-sources.jar
+
+  build-26-x:
+    name: "Build 26.x Mods"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,14 +59,36 @@ jobs:
           distribution: 'temurin'
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v3
-      - name: Build 26.x Mods
-        run: |
-          cd auto-sprint-26 && gradle build && cd ..
-          cd custom-crosshair-26 && gradle build && cd ..
-          cd quick-offhand-26 && gradle build && cd ..
+
+      - name: Build auto-sprint (26.x)
+        working-directory: auto-sprint/26.x
+        run: gradle build
+
+      - name: Build custom-crosshair (26.x)
+        working-directory: custom-crosshair/26.x
+        run: gradle build
+
+      - name: Build quick-offhand (26.x)
+        working-directory: quick-offhand/26.x
+        run: gradle build
+
       - uses: actions/upload-artifact@v4
         with:
-          name: mods-26.x
+          name: auto-sprint-26.x
           path: |
-            *-26/build/libs/*.jar
-            !*-26/build/libs/*-sources.jar
+            auto-sprint/26.x/build/libs/auto-sprint-*.jar
+            !auto-sprint/26.x/build/libs/*-sources.jar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: custom-crosshair-26.x
+          path: |
+            custom-crosshair/26.x/build/libs/custom-crosshair-*.jar
+            !custom-crosshair/26.x/build/libs/*-sources.jar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quick-offhand-26.x
+          path: |
+            quick-offhand/26.x/build/libs/quick-offhand-*.jar
+            !quick-offhand/26.x/build/libs/*-sources.jar
