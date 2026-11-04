@@ -2,7 +2,7 @@ name: Build Mods
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  build:
+  build-1-21-4:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,12 +13,28 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.12'
-      - run: cd auto-sprint/1.21.11 && gradle build --no-daemon
-      - run: cd custom-crosshair/1.21.11 && gradle build --no-daemon
-      - run: cd quick-offhand/1.21.11 && gradle build --no-daemon
+
+      - run: cd auto-sprint/1.21.4 && gradle build --no-daemon
+      - run: cd custom-crosshair/1.21.4 && gradle build --no-daemon
+      - run: cd quick-offhand/1.21.4 && gradle build --no-daemon
+
       - uses: actions/upload-artifact@v4
         with:
-          name: mods-1.21.4
+          name: auto-sprint-1.21.4
           path: |
-            */1.21.11/build/libs/*.jar
-            !*/1.21.11/build/libs/*-sources.jar
+            auto-sprint/1.21.4/build/libs/*.jar
+            !auto-sprint/1.21.4/build/libs/*-sources.jar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: custom-crosshair-1.21.4
+          path: |
+            custom-crosshair/1.21.4/build/libs/*.jar
+            !custom-crosshair/1.21.4/build/libs/*-sources.jar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quick-offhand-1.21.4
+          path: |
+            quick-offhand/1.21.4/build/libs/*.jar
+            !quick-offhand/1.21.4/build/libs/*-sources.jar
