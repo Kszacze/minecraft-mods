@@ -1,7 +1,7 @@
 package com.example.quickoffhand.mixin;
+
 import com.example.quickoffhand.QuickOffhandConfig;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
@@ -28,18 +28,18 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
     @Shadow @Nullable protected Slot focusedSlot;
     @Shadow @Nullable protected abstract Slot getSlotAt(double x, double y);
 
-    @Inject(method = "mouseClicked(Lnet/minecraft/client/gui/Click;Z)Z", at = @At("HEAD"), cancellable = true)
-    private void onMouseClicked(Click click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-        if (click.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+    @Inject(method = "mouseClicked(DDI)Z", at = @At("HEAD"), cancellable = true)
+    private void onMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
         
         MinecraftClient client = MinecraftClient.getInstance();
-        if (!InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)) return;
+        if (client.getWindow() == null || !InputUtil.isKeyPressed(client.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT)) return;
 
         ClientPlayerEntity player = client.player;
         ClientPlayerInteractionManager interactionManager = client.interactionManager;
         if (player == null || interactionManager == null || !this.handler.getCursorStack().isEmpty()) return;
 
-        Slot targetSlot = this.focusedSlot != null ? this.focusedSlot : this.getSlotAt(click.x(), click.y());
+        Slot targetSlot = this.focusedSlot != null ? this.focusedSlot : this.getSlotAt(mouseX, mouseY);
         if (targetSlot == null || !targetSlot.hasStack() || !targetSlot.canTakeItems(player)) return;
 
         int offhandSlotId = findOffhandSlotId(player.getInventory());
