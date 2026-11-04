@@ -1,41 +1,58 @@
 package com.example.crosshair.mixin;
-import net.minecraft.client.Minecraft;
+
+import com.example.crosshair.CrosshairConfig;
 import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.EntityHitResult;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Gui.class)
 public abstract class GuiMixin {
-    @Shadow @Final protected Minecraft minecraft;
 
-    @Inject(method = "renderCrosshair(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"), cancellable = true)
-    private void onRenderCrosshair(GuiGraphics graphics, DeltaTracker tracker, CallbackInfo ci) {
+    @Unique
+    private static final int COLOR_WHITE = 0xFFFFFFFF;
+
+    @Shadow
+    @Final
+    protected Minecraft minecraft;
+
+    @Inject(
+        method = "extractCrosshair(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onExtractCrosshair(GuiGraphicsExtractor graphics, DeltaTracker tracker, CallbackInfo ci) {
         ci.cancel();
-        int color = 0xFFFFFFFF;
-        if (this.minecraft.hitResult instanceof EntityHitResult entityHit && entityHit.getEntity() instanceof LivingEntity living) {
-            if (living.isBlocking() && living.getUseItem().is(Items.SHIELD)) color = 0xFF00FF00;
-            else color = 0xFFFF0000;
+
+        final CrosshairConfig cfg = CrosshairConfig.INSTANCE;
+        int color = COLOR_WHITE;
+
+        if (this.minecraft.hitResult instanceof EntityHitResult entityHit
+                && entityHit.getEntity() instanceof LivingEntity living) {
+            if (living.isBlocking() && living.getUseItem().is(Items.SHIELD)) {
+                color = cfg.shieldColor;
+            } else {
+                color = cfg.targetColor;
+            }
         }
 
-        int cx = graphics.guiWidth() / 2;
-        int cy = graphics.guiHeight() / 2;
-        
-        graphics.pose().pushPose();
-        graphics.pose().translate(cx, cy, 0);
-        
-        graphics.fill(-2, 0, 3, 1, color);
-        graphics.fill(0, -2, 1, 0, color);
-        graphics.fill(0, 1, 1, 3, color);
-        
-        graphics.pose().popPose();
+        final int cx = graphics.guiWidth() / 2;
+        final int cy = graphics.guiHeight() / 2;
+        final int s = cfg.scale;
+        final int half = s / 2;
+
+        graphics.fill(cx - 2 * s, cy - half, cx + 3 * s, cy - half + s, color);
+        graphics.fill(cx - half, cy - 2 * s, cx - half + s, cy - half, color);
+        graphics.fill(cx - half, cy - half + s, cx - half + s, cy + 3 * s, color);
     }
 }

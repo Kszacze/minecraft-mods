@@ -1,39 +1,48 @@
 name: Build Mods
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  build-auto-sprint:
+  build-1-21:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: 'temurin', java-version: '25' }
+        with:
+          distribution: 'temurin'
+          java-version: '21'
       - uses: gradle/actions/setup-gradle@v3
-      - run: cd auto-sprint-1.21 && gradle build
-      - run: cd auto-sprint-26 && gradle build
+      - name: Build 1.21.x Mods
+        run: |
+          cd auto-sprint-1.21 && gradle build && cd ..
+          cd custom-crosshair-1.21 && gradle build && cd ..
+          cd quick-offhand-1.21 && gradle build && cd ..
       - uses: actions/upload-artifact@v4
-        with: { name: auto-sprint-jars, path: '*/build/libs/*.jar' }
+        with:
+          name: mods-1.21.11
+          path: |
+            *-1.21/build/libs/*.jar
+            !*-1.21/build/libs/*-sources.jar
 
-  build-custom-crosshair:
+  build-26:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: 'temurin', java-version: '25' }
+        with:
+          distribution: 'temurin'
+          java-version: '25'
       - uses: gradle/actions/setup-gradle@v3
-      - run: cd custom-crosshair-1.21 && gradle build
-      - run: cd custom-crosshair-26 && gradle build
+      - name: Build 26.x Mods
+        run: |
+          cd auto-sprint-26 && gradle build && cd ..
+          cd custom-crosshair-26 && gradle build && cd ..
+          cd quick-offhand-26 && gradle build && cd ..
       - uses: actions/upload-artifact@v4
-        with: { name: custom-crosshair-jars, path: '*/build/libs/*.jar' }
-
-  build-quick-offhand:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: 'temurin', java-version: '25' }
-      - uses: gradle/actions/setup-gradle@v3
-      - run: cd quick-offhand-1.21 && gradle build
-      - run: cd quick-offhand-26 && gradle build
-      - uses: actions/upload-artifact@v4
-        with: { name: quick-offhand-jars, path: '*/build/libs/*.jar' }
+        with:
+          name: mods-26.x
+          path: |
+            *-26/build/libs/*.jar
+            !*-26/build/libs/*-sources.jar
