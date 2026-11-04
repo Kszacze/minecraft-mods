@@ -16,7 +16,7 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '9.2'
+          gradle-version: '8.12'
 
       - name: Build auto-sprint (1.21.11)
         working-directory: auto-sprint/1.21.11
@@ -62,7 +62,7 @@ jobs:
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '9.2'
+          gradle-version: '8.12'
 
       - name: Build auto-sprint (26.x)
         working-directory: auto-sprint/26.x
