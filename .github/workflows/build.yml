@@ -15,18 +15,20 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.12'
 
       - name: Build auto-sprint (1.21.11)
         working-directory: auto-sprint/1.21.11
-        run: gradle build
+        run: gradle build --no-daemon
 
       - name: Build custom-crosshair (1.21.11)
         working-directory: custom-crosshair/1.21.11
-        run: gradle build
+        run: gradle build --no-daemon
 
       - name: Build quick-offhand (1.21.11)
         working-directory: quick-offhand/1.21.11
-        run: gradle build
+        run: gradle build --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
@@ -59,18 +61,20 @@ jobs:
           distribution: 'temurin'
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.12'
 
       - name: Build auto-sprint (26.x)
         working-directory: auto-sprint/26.x
-        run: gradle build
+        run: gradle build --no-daemon
 
       - name: Build custom-crosshair (26.x)
         working-directory: custom-crosshair/26.x
-        run: gradle build
+        run: gradle build --no-daemon
 
       - name: Build quick-offhand (26.x)
         working-directory: quick-offhand/26.x
-        run: gradle build
+        run: gradle build --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
