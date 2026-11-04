@@ -1,0 +1,35 @@
+name: Build Mods
+on: [push, pull_request]
+
+jobs:
+  build-1-21:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v3
+      - name: Build Auto-Sprint 1.21
+        run: cd auto-sprint-1.21 && gradle build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auto-sprint-1.21
+          path: auto-sprint-1.21/build/libs/*-1.21*.jar
+
+  build-26:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v3
+      - name: Build Auto-Sprint 26
+        run: cd auto-sprint-26 && gradle build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auto-sprint-26
+          path: auto-sprint-26/build/libs/*-26*.jar
