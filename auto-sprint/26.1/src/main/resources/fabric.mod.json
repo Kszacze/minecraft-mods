@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "auto_sprint",
+  "version": "${version}",
+  "name": "Auto Sprint",
+  "description": "Makes the player always sprint when moving forward.",
+  "environment": "client",
+  "entrypoints": { "client": [ "com.example.autosprint.AutoSprintClient" ] },
+  "depends": { "fabricloader": ">=0.18.0", "fabric-lifecycle-events-v1": "*", "minecraft": "26.1", "java": ">=25" }
+}

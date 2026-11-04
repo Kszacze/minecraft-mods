@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "quick_offhand",
+  "version": "${version}",
+  "name": "Quick Offhand",
+  "description": "Moves whitelisted items to the offhand when Shift + Left Clicking in an inventory.",
+  "environment": "client",
+  "entrypoints": {
+    "client": [ "com.example.quickoffhand.QuickOffhandClient" ],
+    "modmenu": [ "com.example.quickoffhand.ModMenuIntegration" ]
+  },
+  "mixins": [ "quickoffhand.mixins.json" ],
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": ">=1.21 <=1.21.1", "java": ">=21" }
+}

@@ -24,11 +24,10 @@ public final class CrosshairConfig {
                 if (loaded != null) {
                     loaded.scale = Math.max(1, Math.min(5, loaded.scale));
                     loaded.targetColor |= 0xFF000000;
-                    loaded.shieldColor |= 0xFF00FF00 == loaded.shieldColor ? 0xFF000000 : 0xFF000000;
+                    loaded.shieldColor |= 0xFF000000;
                     INSTANCE = loaded;
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
         } else {
             save();
         }
@@ -40,8 +39,7 @@ public final class CrosshairConfig {
         INSTANCE.shieldColor |= 0xFF000000;
         try (FileWriter writer = new FileWriter(FILE)) {
             GSON.toJson(INSTANCE, writer);
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 
     public static String toHex(int color) {

@@ -19,10 +19,7 @@ import java.util.Set;
 
 public final class QuickOffhandConfig {
     public boolean swapWhenOccupied = false;
-    public List<String> whitelist = new ArrayList<>(Arrays.asList(
-            "minecraft:shield",
-            "minecraft:totem_of_undying"
-    ));
+    public List<String> whitelist = new ArrayList<>(Arrays.asList("minecraft:shield", "minecraft:totem_of_undying"));
 
     private transient final Set<Item> resolvedWhitelist = new HashSet<>();
     private static final File FILE = new File(FabricLoader.getInstance().getConfigDir().toFile(), "quick_offhand.json");
@@ -34,13 +31,10 @@ public final class QuickOffhandConfig {
             try (FileReader reader = new FileReader(FILE)) {
                 QuickOffhandConfig loaded = GSON.fromJson(reader, QuickOffhandConfig.class);
                 if (loaded != null) {
-                    if (loaded.whitelist == null) {
-                        loaded.whitelist = new ArrayList<>(Arrays.asList("minecraft:shield", "minecraft:totem_of_undying"));
-                    }
+                    if (loaded.whitelist == null) loaded.whitelist = new ArrayList<>(Arrays.asList("minecraft:shield", "minecraft:totem_of_undying"));
                     INSTANCE = loaded;
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
         } else {
             save();
         }
@@ -50,8 +44,7 @@ public final class QuickOffhandConfig {
     public static void save() {
         try (FileWriter writer = new FileWriter(FILE)) {
             GSON.toJson(INSTANCE, writer);
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
         INSTANCE.rebuildCache();
     }
 
@@ -63,9 +56,7 @@ public final class QuickOffhandConfig {
             Identifier id = Identifier.tryParse(rawId.trim());
             if (id != null && Registries.ITEM.containsId(id)) {
                 Item item = Registries.ITEM.get(id);
-                if (item != Items.AIR) {
-                    resolvedWhitelist.add(item);
-                }
+                if (item != Items.AIR) resolvedWhitelist.add(item);
             }
         }
     }
@@ -79,10 +70,8 @@ public final class QuickOffhandConfig {
         String idStr = id.toString();
         if (resolvedWhitelist.contains(item)) {
             whitelist.remove(idStr);
-        } else {
-            if (!whitelist.contains(idStr)) {
-                whitelist.add(idStr);
-            }
+        } else if (!whitelist.contains(idStr)) {
+            whitelist.add(idStr);
         }
         save();
     }

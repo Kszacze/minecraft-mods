@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "custom_crosshair",
+  "version": "${version}",
+  "name": "Custom Crosshair",
+  "description": "Replaces the crosshair with a simple plus that changes color when aiming at entities or shields.",
+  "environment": "client",
+  "entrypoints": { "client": [ "com.example.crosshair.CrosshairClient" ] },
+  "mixins": [ "crosshair.mixins.json" ],
+  "depends": { "fabricloader": ">=0.18.0", "minecraft": "26.1", "java": ">=25" }
+}

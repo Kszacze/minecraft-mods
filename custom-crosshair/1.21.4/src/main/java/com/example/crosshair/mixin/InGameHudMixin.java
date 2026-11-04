@@ -18,13 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(InGameHud.class)
 public abstract class InGameHudMixin {
-
-    @Unique
-    private static final int COLOR_WHITE = 0xFFFFFFFF;
-
-    @Shadow
-    @Final
-    private MinecraftClient client;
+    @Unique private static final int COLOR_WHITE = 0xFFFFFFFF;
+    @Shadow @Final private MinecraftClient client;
 
     @Inject(
         method = "renderCrosshair(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
@@ -51,7 +46,6 @@ public abstract class InGameHudMixin {
         final int s = cfg.scale;
         final int half = s / 2;
 
-        // Non-overlapping integer pixel plus centered at (cx, cy)
         context.fill(cx - 2 * s, cy - half, cx + 3 * s, cy - half + s, color);
         context.fill(cx - half, cy - 2 * s, cx - half + s, cy - half, color);
         context.fill(cx - half, cy - half + s, cx - half + s, cy + 3 * s, color);

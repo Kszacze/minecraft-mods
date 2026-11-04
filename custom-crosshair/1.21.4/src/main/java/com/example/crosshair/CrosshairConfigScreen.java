@@ -33,7 +33,6 @@ public final class CrosshairConfigScreen extends Screen {
         int cx = this.width / 2;
         int top = 28;
 
-        // Scale Slider (1x to 5x integer pixel scale)
         this.addDrawableChild(new SliderWidget(cx - 100, top, 200, 20, Text.literal("Scale: " + this.scale + "x"), (this.scale - 1) / 4.0) {
             @Override
             protected void updateMessage() {
@@ -50,7 +49,6 @@ public final class CrosshairConfigScreen extends Screen {
         int rightCol = cx + 5;
         int colY = top + 36;
 
-        // Target Hex Field
         this.targetHexField = new TextFieldWidget(this.textRenderer, leftCol, colY, 150, 18, Text.literal("Target Hex"));
         this.targetHexField.setMaxLength(7);
         this.targetHexField.setText(CrosshairConfig.toHex(this.targetColor));
@@ -73,7 +71,6 @@ public final class CrosshairConfigScreen extends Screen {
         this.targetG = this.addDrawableChild(new ColorChannelSlider(leftCol, colY + 42, 150, 18, "G", (this.targetColor >> 8) & 0xFF, val -> updateTargetChannel(8, val)));
         this.targetB = this.addDrawableChild(new ColorChannelSlider(leftCol, colY + 62, 150, 18, "B", this.targetColor & 0xFF, val -> updateTargetChannel(0, val)));
 
-        // Shield Hex Field
         this.shieldHexField = new TextFieldWidget(this.textRenderer, rightCol, colY, 150, 18, Text.literal("Shield Hex"));
         this.shieldHexField.setMaxLength(7);
         this.shieldHexField.setText(CrosshairConfig.toHex(this.shieldColor));
@@ -141,7 +138,6 @@ public final class CrosshairConfigScreen extends Screen {
         context.drawTextWithShadow(this.textRenderer, "Target Color:", cx - 155, colY - 11, this.targetColor);
         context.drawTextWithShadow(this.textRenderer, "Shield Color:", cx + 5, colY - 11, this.shieldColor);
 
-        // Live Preview Boxes (Default White, Target Color, Shield Color)
         int previewY = colY + 95;
         drawPreviewBox(context, cx - 90, previewY, 0xFFFFFFFF, "Idle");
         drawPreviewBox(context, cx, previewY, this.targetColor, "Target");

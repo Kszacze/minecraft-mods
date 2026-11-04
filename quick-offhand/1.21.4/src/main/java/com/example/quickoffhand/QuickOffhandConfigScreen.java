@@ -37,14 +37,12 @@ public final class QuickOffhandConfigScreen extends Screen {
         int cx = this.width / 2;
         int top = 22;
 
-        // 1. Top Toggle Button: Swap With Occupied Offhand
         this.addDrawableChild(ButtonWidget.builder(getToggleText(), b -> {
             QuickOffhandConfig.INSTANCE.swapWhenOccupied = !QuickOffhandConfig.INSTANCE.swapWhenOccupied;
             QuickOffhandConfig.save();
             b.setMessage(getToggleText());
         }).dimensions(cx - 120, top, 240, 20).build());
 
-        // 2. Item Search Bar (Filters by Display Name and ID)
         this.searchBox = new TextFieldWidget(this.textRenderer, cx - 120, top + 25, 240, 18, Text.literal("Search items..."));
         this.searchBox.setPlaceholder(Text.literal("Search items (e.g. totem, shield, apple)..."));
         this.searchBox.setText(this.currentQuery);
@@ -55,7 +53,6 @@ public final class QuickOffhandConfigScreen extends Screen {
         });
         this.addDrawableChild(this.searchBox);
 
-        // 3. Item Rows with + / X Action Buttons
         int listStartY = top + 48;
         for (int i = 0; i < ROWS_PER_PAGE; i++) {
             final int rowIndex = i;
@@ -70,7 +67,6 @@ public final class QuickOffhandConfigScreen extends Screen {
             }).dimensions(cx + 96, rowY, 24, 20).build());
         }
 
-        // 4. Pagination & Done Controls
         int navY = listStartY + ROWS_PER_PAGE * 22 + 4;
         this.prevButton = this.addDrawableChild(ButtonWidget.builder(Text.literal("< Prev"), b -> {
             if (this.page > 0) {
