@@ -10,5 +10,5 @@
     "modmenu": [ "com.example.crosshair.ModMenuIntegration" ]
   },
   "mixins": [ "crosshair.mixins.json" ],
-  "depends": { "fabricloader": ">=0.16.0", "minecraft": "26.3", "java": ">=21" }
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": ">=26.1 <=26.3", "java": ">=21" }
 }

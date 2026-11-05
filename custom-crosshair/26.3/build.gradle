@@ -1,4 +1,4 @@
-plugins { id 'fabric-loom' version "${loom_version}" }
+plugins { id 'fabric-loom' version "1.17-SNAPSHOT" }
 version = project.mod_version
 group = project.maven_group
 base { archivesName = project.archives_base_name }
@@ -6,10 +6,9 @@ repositories { maven { url "https://maven.terraformersmc.com/releases/" } }
 dependencies {
     minecraft "com.mojang:minecraft:1.21.11"
     mappings "net.fabricmc:yarn:1.21.11+build.6:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc:fabric-loader:0.18.4"
     modCompileOnly "com.terraformersmc:modmenu:17.0.0"
 }
-
 processResources {
     inputs.property "version", project.version
     filesMatching("fabric.mod.json") { expand "version": inputs.properties.version }

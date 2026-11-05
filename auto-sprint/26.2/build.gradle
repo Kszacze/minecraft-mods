@@ -1,4 +1,4 @@
-plugins { id 'fabric-loom' version "${loom_version}" }
+plugins { id 'fabric-loom' version "1.17-SNAPSHOT" }
 version = project.mod_version
 group = project.maven_group
 base { archivesName = project.archives_base_name }
@@ -6,8 +6,7 @@ repositories { maven { url "https://maven.terraformersmc.com/releases/" } }
 dependencies {
     minecraft "com.mojang:minecraft:1.21.11"
     mappings "net.fabricmc:yarn:1.21.11+build.6:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modCompileOnly "com.terraformersmc:modmenu:17.0.0"
+    modImplementation "net.fabricmc:fabric-loader:0.18.4"
     modImplementation fabricApi.module("fabric-lifecycle-events-v1", "0.119.2+1.21.4")
 }
 processResources {
