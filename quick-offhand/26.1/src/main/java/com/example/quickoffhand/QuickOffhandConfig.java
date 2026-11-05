@@ -3,10 +3,11 @@ package com.example.quickoffhand;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -53,14 +54,25 @@ public final class QuickOffhandConfig {
         for (String rawId : whitelist) {
             if (rawId == null) continue;
             Identifier id = Identifier.tryParse(rawId.trim());
-            if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
-                Item item = BuiltInRegistries.ITEM.getValue(id);
-                if (item != null && item != Items.AIR) resolvedWhitelist.add(item);
+            if (id != null && Registries.ITEM.containsId(id)) {
+                Item item = Registries.ITEM.get(id);
+                if (item != Items.AIR) resolvedWhitelist.add(item);
             }
         }
     }
 
     public boolean isWhitelisted(Item item) {
         return resolvedWhitelist.contains(item);
+    }
+
+    public void toggleItem(Item item) {
+        Identifier id = Registries.ITEM.getId(item);
+        String idStr = id.toString();
+        if (resolvedWhitelist.contains(item)) {
+            whitelist.remove(idStr);
+        } else if (!whitelist.contains(idStr)) {
+            whitelist.add(idStr);
+        }
+        save();
     }
 }

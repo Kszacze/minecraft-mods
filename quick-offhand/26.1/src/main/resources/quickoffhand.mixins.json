@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.example.quickoffhand.mixin",
-  "compatibilityLevel": "JAVA_25",
-  "client": [ "AbstractContainerScreenMixin" ],
+  "compatibilityLevel": "JAVA_21",
+  "client": [ "HandledScreenMixin" ],
   "injectors": { "defaultRequire": 1 }
 }
