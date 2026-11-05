@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.example.crosshair.mixin",
-  "compatibilityLevel": "JAVA_21",
-  "client": [ "InGameHudMixin" ],
+  "compatibilityLevel": "JAVA_25",
+  "client": [ "GuiMixin" ],
   "injectors": { "defaultRequire": 1 }
 }

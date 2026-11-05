@@ -5,10 +5,7 @@
   "name": "Quick Offhand",
   "description": "Moves whitelisted items to the offhand when Shift + Left Clicking in an inventory.",
   "environment": "client",
-  "entrypoints": {
-    "client": [ "com.example.quickoffhand.QuickOffhandClient" ],
-    "modmenu": [ "com.example.quickoffhand.ModMenuIntegration" ]
-  },
+  "entrypoints": { "client": [ "com.example.quickoffhand.QuickOffhandClient" ] },
   "mixins": [ "quickoffhand.mixins.json" ],
-  "depends": { "fabricloader": ">=0.16.0", "minecraft": ">=26.1 <=26.3", "java": ">=21" }
+  "depends": { "fabricloader": ">=0.18.0", "minecraft": ">=26.1 <=26.3", "java": ">=25" }
 }
