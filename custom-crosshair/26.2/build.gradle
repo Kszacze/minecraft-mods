@@ -4,6 +4,7 @@ group = project.maven_group
 base { archivesName = project.archives_base_name }
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 processResources {
