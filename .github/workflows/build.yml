@@ -7,10 +7,10 @@ on:
 jobs:
   build-auto-sprint:
     name: "Build auto-sprint (All Versions)"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '25'
@@ -31,10 +31,10 @@ jobs:
 
   build-custom-crosshair:
     name: "Build custom-crosshair (All Versions)"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '25'
@@ -55,10 +55,10 @@ jobs:
 
   build-quick-offhand:
     name: "Build quick-offhand (All Versions)"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '25'
