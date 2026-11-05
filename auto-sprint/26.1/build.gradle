@@ -1,22 +1,15 @@
-plugins { id 'fabric-loom' version "1.17-SNAPSHOT" }
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
 version = project.mod_version
 group = project.maven_group
 base { archivesName = project.archives_base_name }
 
 dependencies {
-    minecraft "com.mojang:minecraft:1.21.11"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:0.18.4"
-    modImplementation fabricApi.module("fabric-lifecycle-events-v1", "0.119.2+1.21.4")
-}
-
-remapJar {
-    enabled = false
-}
-
-jar {
-    archiveClassifier = ""
-    destinationDirectory = layout.buildDirectory.dir("libs")
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:+"
 }
 
 processResources {

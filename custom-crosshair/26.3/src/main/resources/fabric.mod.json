@@ -7,5 +7,5 @@
   "environment": "client",
   "entrypoints": { "client": [ "com.example.crosshair.CrosshairClient" ] },
   "mixins": [ "crosshair.mixins.json" ],
-  "depends": { "fabricloader": ">=0.18.0", "minecraft": ">=26.1 <=26.3", "java": ">=25" }
+  "depends": { "fabricloader": ">=0.18.0", "minecraft": ">=26.3 <=26.3", "java": ">=25" }
 }

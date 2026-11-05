@@ -4,7 +4,7 @@ import com.example.crosshair.CrosshairConfig;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.EntityHitResult;
@@ -21,16 +21,23 @@ public abstract class GuiMixin {
     @Unique private static final int COLOR_WHITE = 0xFFFFFFFF;
     @Shadow @Final protected Minecraft minecraft;
 
-    @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true)
-    private void onRenderCrosshair(GuiGraphics graphics, DeltaTracker tracker, CallbackInfo ci) {
+    @Inject(
+        method = "extractCrosshair(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onExtractCrosshair(GuiGraphicsExtractor graphics, DeltaTracker tracker, CallbackInfo ci) {
         ci.cancel();
         final CrosshairConfig cfg = CrosshairConfig.INSTANCE;
         int color = COLOR_WHITE;
 
         if (this.minecraft.hitResult instanceof EntityHitResult entityHit
                 && entityHit.getEntity() instanceof LivingEntity living) {
-            if (living.isBlocking() && living.getUseItem().is(Items.SHIELD)) color = cfg.shieldColor;
-            else color = cfg.targetColor;
+            if (living.isBlocking() && living.getUseItem().is(Items.SHIELD)) {
+                color = cfg.shieldColor;
+            } else {
+                color = cfg.targetColor;
+            }
         }
 
         final int cx = graphics.guiWidth() / 2;
