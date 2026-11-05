@@ -2,15 +2,26 @@ plugins { id 'fabric-loom' version "1.17-SNAPSHOT" }
 version = project.mod_version
 group = project.maven_group
 base { archivesName = project.archives_base_name }
+
 dependencies {
     minecraft "com.mojang:minecraft:1.21.11"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:0.18.4"
 }
-remapJar { enabled = false }
+
+remapJar {
+    enabled = false
+}
+
+jar {
+    archiveClassifier = ""
+    destinationDirectory = layout.buildDirectory.dir("libs")
+}
+
 processResources {
     inputs.property "version", project.version
     filesMatching("fabric.mod.json") { expand "version": inputs.properties.version }
 }
+
 tasks.withType(JavaCompile).configureEach { it.options.release = 25 }
 java { sourceCompatibility = JavaVersion.VERSION_25; targetCompatibility = JavaVersion.VERSION_25 }

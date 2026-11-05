@@ -1,4 +1,5 @@
 package com.example.crosshair.mixin;
+
 import com.example.crosshair.CrosshairConfig;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;

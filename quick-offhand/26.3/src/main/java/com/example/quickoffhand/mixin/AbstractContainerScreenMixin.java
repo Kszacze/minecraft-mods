@@ -1,8 +1,10 @@
 package com.example.quickoffhand.mixin;
+
 import com.example.quickoffhand.QuickOffhandConfig;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -25,12 +27,12 @@ public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMe
     @Shadow @Final protected T menu;
     @Shadow @Nullable protected Slot hoveredSlot;
 
-    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void onMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+    @Inject(method = "mouseClicked(Lnet/minecraft/client/input/MouseButtonEvent;Z)Z", at = @At("HEAD"), cancellable = true)
+    private void onMouseClicked(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
+        if (event.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getWindow() == null || !InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)) return;
+        if (mc.getWindow() == null || !InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)) return;
 
         LocalPlayer player = mc.player;
         MultiPlayerGameMode gameMode = mc.gameMode;

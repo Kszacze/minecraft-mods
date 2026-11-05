@@ -1,9 +1,10 @@
 package com.example.quickoffhand;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import java.io.File;
@@ -28,14 +29,23 @@ public final class QuickOffhandConfig {
         if (FILE.exists()) {
             try (FileReader reader = new FileReader(FILE)) {
                 QuickOffhandConfig loaded = GSON.fromJson(reader, QuickOffhandConfig.class);
-                if (loaded != null) INSTANCE = loaded;
+                if (loaded != null) {
+                    if (loaded.whitelist == null) {
+                        loaded.whitelist = new ArrayList<>(Arrays.asList("minecraft:shield", "minecraft:totem_of_undying"));
+                    }
+                    INSTANCE = loaded;
+                }
             } catch (Exception ignored) {}
-        } else { save(); }
+        } else {
+            save();
+        }
         INSTANCE.rebuildCache();
     }
 
     public static void save() {
-        try (FileWriter writer = new FileWriter(FILE)) { GSON.toJson(INSTANCE, writer); } catch (Exception ignored) {}
+        try (FileWriter writer = new FileWriter(FILE)) {
+            GSON.toJson(INSTANCE, writer);
+        } catch (Exception ignored) {}
         INSTANCE.rebuildCache();
     }
 
@@ -43,12 +53,18 @@ public final class QuickOffhandConfig {
         resolvedWhitelist.clear();
         if (whitelist == null) return;
         for (String rawId : whitelist) {
-            ResourceLocation id = ResourceLocation.tryParse(rawId.trim());
+            if (rawId == null) continue;
+            Identifier id = Identifier.tryParse(rawId.trim());
             if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
                 Item item = BuiltInRegistries.ITEM.getValue(id);
-                if (item != null && item != Items.AIR) resolvedWhitelist.add(item);
+                if (item != null && item != Items.AIR) {
+                    resolvedWhitelist.add(item);
+                }
             }
         }
     }
-    public boolean isWhitelisted(Item item) { return resolvedWhitelist.contains(item); }
+
+    public boolean isWhitelisted(Item item) {
+        return resolvedWhitelist.contains(item);
+    }
 }
