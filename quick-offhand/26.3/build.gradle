@@ -11,6 +11,177 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
+tasks.register('generateMixin') {
+    doLast {
+        def urls = configurations.compileClasspath.files.collect { it.toURI().toURL() } as URL[]
+        def loader = new java.net.URLClassLoader(urls, ClassLoader.getPlatformClassLoader())
+        try {
+            def getDesc = { Class<?> c ->
+                if (c == void.class) return "V"
+                if (c == boolean.class) return "Z"
+                if (c == byte.class) return "B"
+                if (c == char.class) return "C"
+                if (c == short.class) return "S"
+                if (c == int.class) return "I"
+                if (c == long.class) return "J"
+                if (c == float.class) return "F"
+                if (c == double.class) return "D"
+                if (c.isArray()) return c.getName().replace('.', '/')
+                return "L" + c.getName().replace('.', '/') + ";"
+            }
+
+            def gmClass = Class.forName("net.minecraft.client.multiplayer.MultiPlayerGameMode", false, loader)
+            def clickMethod = gmClass.getDeclaredMethods().find { m ->
+                !m.isSynthetic() &&
+                m.parameterCount == 5 &&
+                m.parameterTypes[0] == int.class &&
+                m.parameterTypes[1] == int.class &&
+                m.parameterTypes[2] == int.class &&
+                m.parameterTypes[3].isEnum()
+            }
+            if (clickMethod == null) {
+                throw new GradleException("No 5-arg inventory click method found in MultiPlayerGameMode!")
+            }
+
+            def clickMethodName = clickMethod.name
+            def clickEnumClass = clickMethod.parameterTypes[3]
+            def clickEnumFqcn = clickEnumClass.getCanonicalName()
+            def enumConsts = clickEnumClass.getEnumConstants()
+            def pickupConst = enumConsts.find { it.name() == "PICKUP" } ?: enumConsts[0]
+            def pickupExpr = clickEnumFqcn + "." + pickupConst.name()
+
+            def acsClass = Class.forName("net.minecraft.client.gui.screens.inventory.AbstractContainerScreen", false, loader)
+            def mouseCandidates = acsClass.getDeclaredMethods().findAll { m ->
+                !m.isSynthetic() &&
+                !m.name.contains('$') &&
+                m.name == "mouseClicked" &&
+                m.returnType == boolean.class &&
+                m.parameterCount >= 1
+            }
+            if (mouseCandidates.isEmpty()) {
+                throw new GradleException("No mouseClicked method found in AbstractContainerScreen!")
+            }
+
+            def mouseMethod = mouseCandidates[0]
+            def mouseParamDesc = mouseMethod.parameterTypes.collect { getDesc(it) }.join("")
+            def fullMouseTarget = mouseMethod.name + "(" + mouseParamDesc + ")Z"
+
+            def mouseParamDecls = []
+            mouseMethod.parameterTypes.eachWithIndex { Class<?> pt, int idx ->
+                mouseParamDecls << (pt.getCanonicalName() + " arg" + idx)
+            }
+            mouseParamDecls << "CallbackInfoReturnable<Boolean> cir"
+            def mouseParamListStr = mouseParamDecls.join(", ")
+
+            def buttonCheck = "if (arg0.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;"
+            if (mouseMethod.parameterTypes[0] == double.class && mouseMethod.parameterTypes.length >= 3) {
+                buttonCheck = "if (arg2 != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;"
+            }
+
+            def menuField = acsClass.getDeclaredFields().find { f ->
+                f.name == "menu" || f.type.name == "net.minecraft.world.inventory.AbstractContainerMenu"
+            }
+            def hoveredSlotField = acsClass.getDeclaredFields().find { f ->
+                f.name == "hoveredSlot"
+            } ?: acsClass.getDeclaredFields().find { f ->
+                f.type.name == "net.minecraft.world.inventory.Slot" && java.lang.reflect.Modifier.isProtected(f.modifiers)
+            }
+
+            println("Resolved 26.x QuickOffhand: " + fullMouseTarget + " | " + clickMethodName + " | " + pickupExpr)
+
+            def template = '''package com.example.quickoffhand.mixin;
+
+import com.example.quickoffhand.QuickOffhandConfig;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.inventory.Slot;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+@Mixin(AbstractContainerScreen.class)
+public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> {
+    @Shadow @Final protected T __MENU_FIELD__;
+    @Shadow @Nullable protected Slot __HOVERED_SLOT_FIELD__;
+
+    @Inject(method = "__MOUSE_TARGET__", at = @At("HEAD"), cancellable = true)
+    private void onMouseClicked(__MOUSE_PARAMS__) {
+        __BUTTON_CHECK__
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getWindow() == null || !InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)) return;
+
+        LocalPlayer player = mc.player;
+        MultiPlayerGameMode gameMode = mc.gameMode;
+        if (player == null || gameMode == null || !this.__MENU_FIELD__.getCarried().isEmpty()) return;
+
+        Slot targetSlot = this.__HOVERED_SLOT_FIELD__;
+        if (targetSlot == null || !targetSlot.hasItem() || !targetSlot.mayPickup(player)) return;
+
+        int offhandSlotId = findOffhandSlotId(player.getInventory());
+        if (offhandSlotId == -1 || targetSlot.index == offhandSlotId) return;
+
+        if (!QuickOffhandConfig.INSTANCE.isWhitelisted(targetSlot.getItem().getItem())) return;
+
+        boolean offhandEmpty = player.getOffhandItem().isEmpty();
+        if (!offhandEmpty && !QuickOffhandConfig.INSTANCE.swapWhenOccupied) return;
+
+        int containerId = this.__MENU_FIELD__.containerId;
+        int sourceSlotId = targetSlot.index;
+
+        if (offhandEmpty) {
+            gameMode.__CLICK_METHOD__(containerId, sourceSlotId, 0, __PICKUP_EXPR__, player);
+            gameMode.__CLICK_METHOD__(containerId, offhandSlotId, 0, __PICKUP_EXPR__, player);
+        } else {
+            gameMode.__CLICK_METHOD__(containerId, sourceSlotId, 0, __PICKUP_EXPR__, player);
+            gameMode.__CLICK_METHOD__(containerId, offhandSlotId, 0, __PICKUP_EXPR__, player);
+            gameMode.__CLICK_METHOD__(containerId, sourceSlotId, 0, __PICKUP_EXPR__, player);
+        }
+        cir.setReturnValue(true);
+    }
+
+    @Unique
+    private int findOffhandSlotId(Inventory playerInventory) {
+        for (Slot slot : this.__MENU_FIELD__.slots) {
+            if (slot.container == playerInventory && slot.getContainerSlot() == Inventory.SLOT_OFFHAND) return slot.index;
+        }
+        if (this.__MENU_FIELD__ instanceof InventoryMenu) return InventoryMenu.SHIELD_SLOT;
+        return -1;
+    }
+}
+'''
+            def outFile = file("src/main/java/com/example/quickoffhand/mixin/AbstractContainerScreenMixin.java")
+            outFile.parentFile.mkdirs()
+            outFile.text = template
+                .replace("__MOUSE_TARGET__", fullMouseTarget)
+                .replace("__MOUSE_PARAMS__", mouseParamListStr)
+                .replace("__BUTTON_CHECK__", buttonCheck)
+                .replace("__CLICK_METHOD__", clickMethodName)
+                .replace("__PICKUP_EXPR__", pickupExpr)
+                .replace("__MENU_FIELD__", menuField.name)
+                .replace("__HOVERED_SLOT_FIELD__", hoveredSlotField.name)
+        } finally {
+            loader.close()
+        }
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn 'generateMixin'
+}
+
 processResources {
     inputs.property "version", project.version
     filesMatching("fabric.mod.json") { expand "version": inputs.properties.version }
