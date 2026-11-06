@@ -73,10 +73,28 @@ tasks.register('generateMixin') {
             mouseParamDecls << "CallbackInfoReturnable<Boolean> cir"
             def mouseParamListStr = mouseParamDecls.join(", ")
 
-            def buttonCheck = "if (arg0.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;"
+            def icClass = Class.forName("com.mojang.blaze3d.platform.InputConstants", false, loader)
+            def leftBtnConst = icClass.getFields().any { it.name == "MOUSE_BUTTON_LEFT" } ? "InputConstants.MOUSE_BUTTON_LEFT" : "0"
+            def lShiftConst = icClass.getFields().any { it.name == "KEY_LSHIFT" } ? "InputConstants.KEY_LSHIFT" : "340"
+            def rShiftConst = icClass.getFields().any { it.name == "KEY_RSHIFT" } ? "InputConstants.KEY_RSHIFT" : "344"
+
+            def buttonCheck = "if (arg0.button() != " + leftBtnConst + ") return;"
             if (mouseMethod.parameterTypes[0] == double.class && mouseMethod.parameterTypes.length >= 3) {
-                buttonCheck = "if (arg2 != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;"
+                buttonCheck = "if (arg2 != " + leftBtnConst + ") return;"
             }
+
+            def shiftChecks = [
+                "InputConstants.isKeyDown(mc.getWindow(), " + lShiftConst + ")",
+                "InputConstants.isKeyDown(mc.getWindow(), " + rShiftConst + ")"
+            ]
+            if (mouseMethod.parameterTypes[0] != double.class && mouseMethod.parameterTypes[0].getMethods().any { it.name == "hasShiftDown" && it.parameterCount == 0 }) {
+                shiftChecks.add(0, "arg0.hasShiftDown()")
+            }
+            def mcClass = Class.forName("net.minecraft.client.Minecraft", false, loader)
+            if (mcClass.getMethods().any { it.name == "hasShiftDown" && it.parameterCount == 0 }) {
+                shiftChecks.add(0, "mc.hasShiftDown()")
+            }
+            def shiftExpr = "(" + shiftChecks.join(" || ") + ")"
 
             def menuField = acsClass.getDeclaredFields().find { f ->
                 f.name == "menu" || f.type.name == "net.minecraft.world.inventory.AbstractContainerMenu"
@@ -87,7 +105,7 @@ tasks.register('generateMixin') {
                 f.type.name == "net.minecraft.world.inventory.Slot" && java.lang.reflect.Modifier.isProtected(f.modifiers)
             }
 
-            println("Resolved 26.x QuickOffhand: " + fullMouseTarget + " | " + clickMethodName + " | " + pickupExpr)
+            println("Resolved 26.x QuickOffhand: " + fullMouseTarget + " | " + clickMethodName + " | " + pickupExpr + " | Shift: " + shiftExpr)
 
             def template = '''package com.example.quickoffhand.mixin;
 
@@ -102,7 +120,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.Slot;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -121,7 +138,7 @@ public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMe
         __BUTTON_CHECK__
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getWindow() == null || !InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)) return;
+        if (mc.getWindow() == null || !__SHIFT_EXPR__) return;
 
         LocalPlayer player = mc.player;
         MultiPlayerGameMode gameMode = mc.gameMode;
@@ -168,6 +185,7 @@ public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMe
                 .replace("__MOUSE_TARGET__", fullMouseTarget)
                 .replace("__MOUSE_PARAMS__", mouseParamListStr)
                 .replace("__BUTTON_CHECK__", buttonCheck)
+                .replace("__SHIFT_EXPR__", shiftExpr)
                 .replace("__CLICK_METHOD__", clickMethodName)
                 .replace("__PICKUP_EXPR__", pickupExpr)
                 .replace("__MENU_FIELD__", menuField.name)

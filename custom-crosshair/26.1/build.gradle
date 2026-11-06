@@ -16,25 +16,6 @@ tasks.register('generateMixin') {
         def urls = configurations.compileClasspath.files.collect { it.toURI().toURL() } as URL[]
         def loader = new java.net.URLClassLoader(urls, ClassLoader.getPlatformClassLoader())
         try {
-            def guiClass = Class.forName("net.minecraft.client.gui.Gui", false, loader)
-            def candidates = guiClass.getDeclaredMethods().findAll { m ->
-                !m.isSynthetic() &&
-                !m.name.contains('$') &&
-                m.name.toLowerCase().contains("crosshair") &&
-                m.returnType == void.class &&
-                m.parameterTypes.any { it.name.contains("GuiGraphics") }
-            }.sort { a, b ->
-                def aExact = (a.name == "extractCrosshair" || a.name == "renderCrosshair") ? 0 : 1
-                def bExact = (b.name == "extractCrosshair" || b.name == "renderCrosshair") ? 0 : 1
-                if (aExact != bExact) return aExact <=> bExact
-                return a.name.length() <=> b.name.length()
-            }
-
-            if (candidates.isEmpty()) {
-                throw new GradleException("No crosshair method found in Gui! Declared methods: " + guiClass.getDeclaredMethods().collect { it.toString() })
-            }
-
-            def targetMethod = candidates[0]
             def getDesc = { Class<?> c ->
                 if (c == void.class) return "V"
                 if (c == boolean.class) return "Z"
@@ -49,24 +30,113 @@ tasks.register('generateMixin') {
                 return "L" + c.getName().replace('.', '/') + ";"
             }
 
+            def hasFill5 = { Class<?> c ->
+                c.getMethods().any { m ->
+                    m.name == "fill" &&
+                    m.parameterCount == 5 &&
+                    m.parameterTypes[0] == int.class &&
+                    m.parameterTypes[1] == int.class &&
+                    m.parameterTypes[2] == int.class &&
+                    m.parameterTypes[3] == int.class &&
+                    m.parameterTypes[4] == int.class
+                }
+            }
+
+            def fillCandidates = []
+            def allCrosshairMethods = []
+
+            configurations.compileClasspath.files.each { File f ->
+                if (f.name.endsWith(".jar") && f.exists()) {
+                    def zip = new java.util.zip.ZipFile(f)
+                    try {
+                        zip.entries().each { entry ->
+                            if (entry.name.startsWith("net/minecraft/client/") && entry.name.endsWith(".class")) {
+                                def bytes = zip.getInputStream(entry).bytes
+                                def rawAscii = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1).toLowerCase()
+                                if (!rawAscii.contains("crosshair")) return
+
+                                def className = entry.name.substring(0, entry.name.length() - 6).replace('/', '.')
+                                try {
+                                    def cls = Class.forName(className, false, loader)
+                                    if (cls.isInterface()) return
+                                    cls.getDeclaredMethods().each { m ->
+                                        if (!m.isSynthetic()) {
+                                            def mLower = m.name.toLowerCase()
+                                            def cLower = cls.name.toLowerCase()
+                                            def fillParamIdx = m.parameterTypes.findIndexOf { hasFill5(it) }
+                                            if (fillParamIdx != -1 && m.returnType == void.class && (mLower.contains("crosshair") || cLower.contains("crosshair") || mLower.contains("extract") || mLower.contains("render"))) {
+                                                fillCandidates << [cls: cls, method: m, gfxIdx: fillParamIdx]
+                                            }
+                                            if (mLower.contains("crosshair") || cLower.contains("crosshair")) {
+                                                allCrosshairMethods << (cls.name + "#" + m.name + "(" + m.parameterTypes.collect { it.name }.join(", ") + ") -> " + m.returnType.name)
+                                            }
+                                        }
+                                    }
+                                } catch (Throwable ignored) {}
+                            }
+                        }
+                    } finally {
+                        zip.close()
+                    }
+                }
+            }
+
+            if (fillCandidates.isEmpty()) {
+                throw new GradleException("No fill(int,int,int,int,int) crosshair candidate found! Discovered: " + allCrosshairMethods)
+            }
+
+            fillCandidates.sort { a, b ->
+                def aScore = (a.method.name == "extractCrosshair" || a.method.name == "renderCrosshair") ? 0 :
+                             (a.method.name.toLowerCase().contains("crosshair") && !a.method.name.contains('$') ? 1 :
+                             (a.cls.simpleName.toLowerCase().contains("crosshair") ? 2 : 3))
+                def bScore = (b.method.name == "extractCrosshair" || b.method.name == "renderCrosshair") ? 0 :
+                             (b.method.name.toLowerCase().contains("crosshair") && !b.method.name.contains('$') ? 1 :
+                             (b.cls.simpleName.toLowerCase().contains("crosshair") ? 2 : 3))
+                if (aScore != bScore) return aScore <=> bScore
+                return a.method.name.length() <=> b.method.name.length()
+            }
+
+            def chosen = fillCandidates[0]
+            def targetClass = chosen.cls
+            def targetMethod = chosen.method
+            def gfxIdx = chosen.gfxIdx
+            def graphicsParamType = targetMethod.parameterTypes[gfxIdx]
+
             def paramDesc = targetMethod.parameterTypes.collect { getDesc(it) }.join("")
             def fullTarget = targetMethod.name + "(" + paramDesc + ")V"
 
             def paramDecls = []
             targetMethod.parameterTypes.eachWithIndex { Class<?> pt, int idx ->
-                def varName = pt.name.contains("GuiGraphics") ? "graphics" : ("arg" + idx)
+                def varName = (idx == gfxIdx) ? "graphics" : ("arg" + idx)
                 paramDecls << (pt.getCanonicalName() + " " + varName)
             }
             paramDecls << "CallbackInfo ci"
             def paramListStr = paramDecls.join(", ")
 
-            println("Resolved 26.x Gui crosshair target: " + fullTarget)
+            def widthCall = "graphics.guiWidth()"
+            def heightCall = "graphics.guiHeight()"
+            if (!graphicsParamType.getMethods().any { it.name == "guiWidth" && it.parameterCount == 0 }) {
+                widthCall = "Minecraft.getInstance().getWindow().getGuiScaledWidth()"
+                heightCall = "Minecraft.getInstance().getWindow().getGuiScaledHeight()"
+            }
+
+            def mcClass = Class.forName("net.minecraft.client.Minecraft", false, loader)
+            def hitResultExpr = "mc.hitResult"
+            if (!mcClass.getFields().any { it.name == "hitResult" } && mcClass.getMethods().any { it.name == "hitResult" && it.parameterCount == 0 }) {
+                hitResultExpr = "mc.hitResult()"
+            }
+
+            def mixinAnnotation = '@Mixin(' + targetClass.getCanonicalName() + '.class)'
+            if (targetClass.name.contains('$') || !java.lang.reflect.Modifier.isPublic(targetClass.modifiers)) {
+                mixinAnnotation = '@Mixin(targets = "' + targetClass.name + '")'
+            }
+
+            println("Resolved 26.x Crosshair Target -> Class: " + targetClass.name + " | Method: " + fullTarget)
 
             def template = '''package com.example.crosshair.mixin;
 
 import com.example.crosshair.CrosshairConfig;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.EntityHitResult;
@@ -76,7 +146,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Gui.class)
+__MIXIN_ANNOTATION__
 public abstract class GuiMixin {
     @Unique private static final int COLOR_WHITE = 0xFFFFFFFF;
 
@@ -91,7 +161,7 @@ public abstract class GuiMixin {
         int color = COLOR_WHITE;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.hitResult instanceof EntityHitResult entityHit
+        if (__HIT_RESULT_EXPR__ instanceof EntityHitResult entityHit
                 && entityHit.getEntity() instanceof LivingEntity living) {
             if (living.isBlocking() && living.getUseItem().is(Items.SHIELD)) {
                 color = cfg.shieldColor;
@@ -100,8 +170,8 @@ public abstract class GuiMixin {
             }
         }
 
-        final int cx = graphics.guiWidth() / 2;
-        final int cy = graphics.guiHeight() / 2;
+        final int cx = __WIDTH_CALL__ / 2;
+        final int cy = __HEIGHT_CALL__ / 2;
         final int s = cfg.scale;
         final int half = s / 2;
 
@@ -114,8 +184,12 @@ public abstract class GuiMixin {
             def outFile = file("src/main/java/com/example/crosshair/mixin/GuiMixin.java")
             outFile.parentFile.mkdirs()
             outFile.text = template
+                .replace("__MIXIN_ANNOTATION__", mixinAnnotation)
                 .replace("__METHOD_TARGET__", fullTarget)
                 .replace("__METHOD_PARAMS__", paramListStr)
+                .replace("__HIT_RESULT_EXPR__", hitResultExpr)
+                .replace("__WIDTH_CALL__", widthCall)
+                .replace("__HEIGHT_CALL__", heightCall)
         } finally {
             loader.close()
         }
