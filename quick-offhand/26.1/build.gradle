@@ -83,17 +83,27 @@ tasks.register('generateMixin') {
                 buttonCheck = "if (arg2 != " + leftBtnConst + ") return;"
             }
 
-            def shiftChecks = [
-                "InputConstants.isKeyDown(mc.getWindow(), " + lShiftConst + ")",
-                "InputConstants.isKeyDown(mc.getWindow(), " + rShiftConst + ")"
-            ]
+            def shiftChecks = []
             if (mouseMethod.parameterTypes[0] != double.class && mouseMethod.parameterTypes[0].getMethods().any { it.name == "hasShiftDown" && it.parameterCount == 0 }) {
-                shiftChecks.add(0, "arg0.hasShiftDown()")
+                shiftChecks << "arg0.hasShiftDown()"
             }
             def mcClass = Class.forName("net.minecraft.client.Minecraft", false, loader)
             if (mcClass.getMethods().any { it.name == "hasShiftDown" && it.parameterCount == 0 }) {
-                shiftChecks.add(0, "mc.hasShiftDown()")
+                shiftChecks << "mc.hasShiftDown()"
             }
+
+            // Check exact signature of InputConstants.isKeyDown: 1-arg (int) in 26.3 SDL3 vs 2-arg (Window, int) in 26.1/26.2
+            def isKeyDown1Arg = icClass.getMethods().any { it.name == "isKeyDown" && it.parameterCount == 1 && it.parameterTypes[0] == int.class }
+            def isKeyDown2Arg = icClass.getMethods().any { it.name == "isKeyDown" && it.parameterCount == 2 && it.parameterTypes[1] == int.class }
+
+            if (isKeyDown1Arg) {
+                shiftChecks << ("InputConstants.isKeyDown(" + lShiftConst + ")")
+                shiftChecks << ("InputConstants.isKeyDown(" + rShiftConst + ")")
+            } else if (isKeyDown2Arg) {
+                shiftChecks << ("InputConstants.isKeyDown(mc.getWindow(), " + lShiftConst + ")")
+                shiftChecks << ("InputConstants.isKeyDown(mc.getWindow(), " + rShiftConst + ")")
+            }
+
             def shiftExpr = "(" + shiftChecks.join(" || ") + ")"
 
             def menuField = acsClass.getDeclaredFields().find { f ->
